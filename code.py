@@ -145,19 +145,21 @@ print('Press Button A to start scanning\n')
 
 while True:
     '''This block of code was used to define the ranging equation using known distances, rssi and tx_power'''
-    if ranging_test:
-        if button.value == 0 and initial_scan_flag == True:
-            print("Button A Pressed! Scanning...\n")
-            for adv in ble.start_scan():  #radio.start_scan(Advertisement, timeout=30)
-                addr = adv.address
-                adv_hex = to_hex(bytes(adv))
-                adv_array = adv_hex.split()
-                '''Filter to check if the detected beacon is an iBeacon. Apple devices are tagged with 0x004C in little endian 
-                format, and the default '''
-                if adv_array[1] == "ff" and adv_array[2] == "4c" and adv_array[3] == "00" \
-                and adv_array[4] == "02" and adv_array[5] == "15":
-                    mac, tx_power = mac_and_tx_pwr(addr, adv_array)
-                    rssi = adv.rssi
+    # if ranging_test:
+    if button.value == 0 and initial_scan_flag == True:
+        print("Button A Pressed! Scanning...\n")
+        TO = None if ranging_test else 15
+        for adv in ble.start_scan(timeout = TO): #radio.start_scan(Advertisement, timeout=30)
+            addr = adv.address
+            adv_hex = to_hex(bytes(adv))
+            adv_array = adv_hex.split()
+            '''Filter to check if the detected beacon is an iBeacon. Apple devices are tagged with 0x004C in little endian 
+            format, and the default '''
+            if adv_array[1] == "ff" and adv_array[2] == "4c" and adv_array[3] == "00" \
+            and adv_array[4] == "02" and adv_array[5] == "15":
+                mac, tx_power = mac_and_tx_pwr(addr, adv_array)
+                rssi = adv.rssi
+                if ranging_test:
                     if adv_count <= packet_count-1:    
                         if str(mac) == 'c2:00:7d:00:03:e2':
                             # print(adv_count)
@@ -176,24 +178,9 @@ while True:
                         initial_scan_flag == False
                         print('End of scan\n')
                         break
-    else:
-        '''This block of code is used to identify nearby iBeacon nodes and then calculate the receiver's position relative to 
-        the nodes'''
-        if button.value == 0:
-            count1 = 0
-            count2 = 0
-            print("Button A Pressed! Scanning...\n")
-            for adv in ble.start_scan(timeout = 15):  #radio.start_scan(Advertisement, timeout = 30)
-                addr = adv.address
-                adv_hex = to_hex(bytes(adv))
-                adv_array = adv_hex.split()
-                '''Filter to check if the detected beacon is an iBeacon. Apple devices are tagged with 0x004C in little endian 
-                format, and the default '''
-                if adv_array[1] == "ff" and adv_array[2] == "4c" and adv_array[3] == "00" and adv_array[4] == "02" \
-                    and adv_array[5] == "15":
-                    mac, tx_power = mac_and_tx_pwr(addr, adv_array)     # find out the MAC address and Tx Power of the device
+                else:
                     if mac not in devices and mac in beacon_dict:       # filter for unique beacons matching the beacon_list
-                        rssi = adv.rssi                                 # store the RSSI for this device
+                        # rssi = adv.rssi                                 # store the RSSI for this device
                         devices.append(mac)
                         # print('devices: {}'.format(devices))
                         # device_profile[profile_index] = {'Device ID':mac, 'Tx_Power':tx_power, 'RSSI':rssi, \
@@ -201,10 +188,40 @@ while True:
                         # profile_index += 1
                         distance = distance_calculation(rssi, tx_power) # calculate the distance from the beacon to receiver
                         distances.append(distance)
-            print('Finished scanning, computing the receiver coordinates...\n')
-            x, y = compute_coordinates(devices, distances)              # compute the x and y coordinate for the receiver
-            if x != 0 and y != 0:
-                '''i pray for my sanity that this works because i have other things to do'''
-                print('your x coordinate is {}, and y coordinate is {}. The anchor beacons were {} and {}.'.format(x, y, devices[0], devices[1]))  
-            else:
-                print('Not enough iBeacons found to approximate coordinates')
+        print('Finished scanning, computing the receiver coordinates...\n')
+        x, y = compute_coordinates(devices, distances)              # compute the x and y coordinate for the receiver
+        if x != 0 and y != 0:
+            '''i pray for my sanity that this works because i have other things to do'''
+            print('your x coordinate is {}, and y coordinate is {}. The anchor beacons were {} and {}.'.format(x, y, devices[0], devices[1]))  
+        else:
+            print('Not enough iBeacons found to approximate coordinates')
+    # else:
+    #     '''This block of code is used to identify nearby iBeacon nodes and then calculate the receiver's position relative to 
+    #     the nodes'''
+    #     if button.value == 0:
+    #         print("Button A Pressed! Scanning...\n")
+    #         for adv in ble.start_scan(timeout = 15):  #radio.start_scan(Advertisement, timeout = 30)
+    #             addr = adv.address
+    #             adv_hex = to_hex(bytes(adv))
+    #             adv_array = adv_hex.split()
+    #             '''Filter to check if the detected beacon is an iBeacon. Apple devices are tagged with 0x004C in little endian 
+    #             format, and the default '''
+    #             if adv_array[1] == "ff" and adv_array[2] == "4c" and adv_array[3] == "00" and adv_array[4] == "02" \
+    #                 and adv_array[5] == "15":
+    #                 mac, tx_power = mac_and_tx_pwr(addr, adv_array)     # find out the MAC address and Tx Power of the device
+    #                 if mac not in devices and mac in beacon_dict:       # filter for unique beacons matching the beacon_list
+    #                     rssi = adv.rssi                                 # store the RSSI for this device
+    #                     devices.append(mac)
+    #                     # print('devices: {}'.format(devices))
+    #                     # device_profile[profile_index] = {'Device ID':mac, 'Tx_Power':tx_power, 'RSSI':rssi, \
+    #                     #     'Distance (in m)': distance}
+    #                     # profile_index += 1
+    #                     distance = distance_calculation(rssi, tx_power) # calculate the distance from the beacon to receiver
+    #                     distances.append(distance)
+    #         print('Finished scanning, computing the receiver coordinates...\n')
+    #         x, y = compute_coordinates(devices, distances)              # compute the x and y coordinate for the receiver
+    #         if x != 0 and y != 0:
+    #             '''i pray for my sanity that this works because i have other things to do'''
+    #             print('your x coordinate is {}, and y coordinate is {}. The anchor beacons were {} and {}.'.format(x, y, devices[0], devices[1]))  
+    #         else:
+    #             print('Not enough iBeacons found to approximate coordinates')
