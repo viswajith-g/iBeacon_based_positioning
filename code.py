@@ -128,7 +128,7 @@ def compute_coordinates(devs, dists):
     '''using the distance between the beacons, and the distance between the individual beacons and the receiver, compute the
     x and y coordinates of the receiver.'''
     try:
-        print('range to beacon {} is {}, range to beacon {} is {}'.format(devs[0], dists[0], devs[1], dists[1]))
+        print('range to beacon {} is {}m, range to beacon {} is {}m'.format(devs[0], dists[0], devs[1], dists[1]))
         X = (pow(dists[0], 2) - pow(dists[1], 2) + pow(beacon_separation, 2))/(2 * beacon_separation)
         Y = math.sqrt(abs(pow(dists[1], 2) - pow(X, 2)))
         # print(X)
@@ -160,7 +160,7 @@ while True:
                     rssi = adv.rssi
                     if adv_count <= packet_count-1:    
                         if str(mac) == 'c2:00:7d:00:03:e2':
-                            print(adv_count)
+                            # print(adv_count)
                             ranges.append(dist)
                             dist += 0.5
                             adv_count += 1
