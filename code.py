@@ -15,6 +15,7 @@ button.direction = digitalio.Direction.INPUT    # Button A is set as input
 packet_count = 1                                # set this to 1 for distance calculation table and 15 for actual ranging calculation
 adv_count = 0                                   # counter for advertisement packets during the ranging equation defining phase
 ranging_test = False                            # set to true to perform ranging test to find out the distance equation data points
+
 '''constants for the distance equations'''
 c1 = 0.055 
 c2 = 3.8 
@@ -23,7 +24,6 @@ c4 = 0.02
 c5 = -0.0675
 c6 = 0.01
 c7 = -0.21
-
 EQN = 2                                           # choose which range calculation equation to use. 0 is eqn1, 1 is eqn2 and 2 is eqn3
 
 
@@ -118,34 +118,12 @@ MAC address and transmission power value'''
 def mac_and_tx_pwr(addr, adv_array):
         address = repr(addr)
         mac_address = address[9:26]
-        # if advert.tx_power is not None:
-        #     tx_power_val =  twos_comp(int(advert.tx_power, 16), 8)
-        # else:
         tx_power_val = twos_comp(int(adv_array[29], 16), 8)
         return mac_address, tx_power_val
 
 '''compute_coordinates(devs, dists) takes in the list of all known scanned iBeacons and the list of the distances to the receiver
 and uses the first two devices to compute  the receiver coordinates using 2D trilateration'''
 def compute_coordinates(devs, dists):
-    # print(devs)
-    # print(dists)
-    # anchor_beacon = devs[0]
-    # x_anchor = list(beacon_dict[anchor_beacon])[0]
-    # y_anchor = list(beacon_dict[anchor_beacon])[1]
-    # for beacon in devs:
-    #     if beacon in beacon_dict:
-    #         # print('xy pair for beacon {} is: {}'.format(beacon, beacon_dict[beacon]))
-    #         x.append(list(beacon_dict[beacon])[0])
-    #         y.append(list(beacon_dict[beacon])[1])
-    # beacon_separation = math.sqrt(pow(x[1] - x[0], 2) + pow((y[1] - y[0]), 2))    # calculate the distance between the beacons
-    # '''using the distance between the beacons, and the distance between the individual beacons and the receiver, compute the
-    # x and y coordinates of the receiver.'''
-    #     print('range to beacon {} is {}m, range to beacon {} is {}m'.format(devs[0], dists[0], devs[1], dists[1]))
-    #     X = (pow(dists[0], 2) - pow(dists[1], 2) + pow(beacon_separation, 2))/(2 * beacon_separation)
-    #     Y = math.sqrt(abs(pow(dists[1], 2) - pow(X, 2)))
-    # try:
-    #     X = X + x_anchor
-    #     Y = Y + y_anchor
     '''using the distance between the beacons, and the distance between the individual beacons and the receiver, compute the
     # x and y coordinates of the receiver.'''
     try:
@@ -165,17 +143,11 @@ def compute_coordinates(devs, dists):
         # print('The beacon {} has coordinates {} and {} and is at a distance of {}m from the receiver'.format(devs[2], x3, y3, d3))
 
         A = 2*x2 - 2*x1
-        # print('A = {}'.format(A))
         B = 2*y2 - 2*y1
-        # print('B = {}'.format(B))
         C = d1**2 - d2**2 - x1**2 + x2**2 - y1**2 + y2**2
-        # print('C = {}'.format(C))
         D = 2*x3 - 2*x2
-        # print('D = {}'.format(D))
         E = 2*y3 - 2*y2
-        # print('E = {}'.format(E))
         F = d2**2 - d3**2 - x2**2 + x3**2 - y2**2 + y3**2
-        # print('F = {}'.format(F))
         X = (C*E - F*B) / (E*A - B*D)
         Y = (C*D - A*F) / (B*D - A*E)
         return X,Y
@@ -187,11 +159,10 @@ print('Press Button A to start scanning\n')
 
 while True:
     '''This block of code was used to define the ranging equation using known distances, rssi and tx_power'''
-    # if ranging_test:
     if button.value == 0 and initial_scan_flag == True:
         init()
         print("Button A Pressed! Scanning...\n")
-        TO = None if ranging_test else 15
+        TO = None if ranging_test else 15       # set timeout to None if trying to derive distance equation, else set to 15 seconds
         for adv in ble.start_scan(timeout = TO): #radio.start_scan(Advertisement, timeout=30)
             addr = adv.address
             adv_hex = to_hex(bytes(adv))
@@ -205,7 +176,6 @@ while True:
                 if ranging_test:
                     if adv_count <= packet_count-1:    
                         if str(mac) == 'c2:00:7d:00:03:e2':
-                            # print(adv_count)
                             ranges.append(dist)
                             dist += 0.5
                             adv_count += 1
@@ -223,7 +193,6 @@ while True:
                         break
                 else:
                     if mac not in devices and mac in beacon_dict:       # filter for unique beacons matching the beacon_list
-                        # rssi = adv.rssi                                 # store the RSSI for this device
                         devices.append(mac)
                         # print('devices: {}'.format(devices))
                         # device_profile[profile_index] = {'Device ID':mac, 'Tx_Power':tx_power, 'RSSI':rssi, \
@@ -236,36 +205,6 @@ while True:
         if x != 0 and y != 0:
             '''i pray for my sanity that this works because i have other things to do'''
             print('Your x coordinate is {}, and y coordinate is {}. The anchor beacons were {}, {} and {}.'.format(x, y, devices[0], devices[1], devices[2])) 
-            print('The Ranging equation used was {}'.format(EQN)) 
+            # print('The Ranging equation used was {}'.format(EQN)) 
         else:
             print('Not enough iBeacons found to approximate coordinates')
-    # else:
-    #     '''This block of code is used to identify nearby iBeacon nodes and then calculate the receiver's position relative to 
-    #     the nodes'''
-    #     if button.value == 0:
-    #         print("Button A Pressed! Scanning...\n")
-    #         for adv in ble.start_scan(timeout = 15):  #radio.start_scan(Advertisement, timeout = 30)
-    #             addr = adv.address
-    #             adv_hex = to_hex(bytes(adv))
-    #             adv_array = adv_hex.split()
-    #             '''Filter to check if the detected beacon is an iBeacon. Apple devices are tagged with 0x004C in little endian 
-    #             format, and the default '''
-    #             if adv_array[1] == "ff" and adv_array[2] == "4c" and adv_array[3] == "00" and adv_array[4] == "02" \
-    #                 and adv_array[5] == "15":
-    #                 mac, tx_power = mac_and_tx_pwr(addr, adv_array)     # find out the MAC address and Tx Power of the device
-    #                 if mac not in devices and mac in beacon_dict:       # filter for unique beacons matching the beacon_list
-    #                     rssi = adv.rssi                                 # store the RSSI for this device
-    #                     devices.append(mac)
-    #                     # print('devices: {}'.format(devices))
-    #                     # device_profile[profile_index] = {'Device ID':mac, 'Tx_Power':tx_power, 'RSSI':rssi, \
-    #                     #     'Distance (in m)': distance}
-    #                     # profile_index += 1
-    #                     distance = distance_calculation(rssi, tx_power) # calculate the distance from the beacon to receiver
-    #                     distances.append(distance)
-    #         print('Finished scanning, computing the receiver coordinates...\n')
-    #         x, y = compute_coordinates(devices, distances)              # compute the x and y coordinate for the receiver
-    #         if x != 0 and y != 0:
-    #             '''i pray for my sanity that this works because i have other things to do'''
-    #             print('your x coordinate is {}, and y coordinate is {}. The anchor beacons were {} and {}.'.format(x, y, devices[0], devices[1]))  
-    #         else:
-    #             print('Not enough iBeacons found to approximate coordinates')
