@@ -162,7 +162,7 @@ while True:
     if button.value == 0 and initial_scan_flag == True:
         init()
         print("Button A Pressed! Scanning...\n")
-        TO = None if ranging_test else 15       # set timeout to None if trying to derive distance equation, else set to 15 seconds
+        TO = None if ranging_test else 15        # set timeout to None if trying to derive distance equation, else set to 15 seconds
         for adv in ble.start_scan(timeout = TO): #radio.start_scan(Advertisement, timeout=30)
             addr = adv.address
             adv_hex = to_hex(bytes(adv))
@@ -182,9 +182,8 @@ while True:
                             pwr_list.append(tx_power)    # grab rssi and tx values from the packet 
                             rssi_list.append(rssi)
                             print(repr(mac))
-                    print('distances list is {}'.format(ranges))
-                    print('tx_power list is {}'.format(pwr_list))
-                    print('rssi list is {}'.format(rssi_list))
+                    # print('distances list is {}'.format(ranges))
+                    # print('rssi list is {}'.format(rssi_list))
                     if adv_count == packet_count:
                         adv_count = 0
                         ble.stop_scan()
@@ -195,9 +194,6 @@ while True:
                     if mac not in devices and mac in beacon_dict:       # filter for unique beacons matching the beacon_list
                         devices.append(mac)
                         # print('devices: {}'.format(devices))
-                        # device_profile[profile_index] = {'Device ID':mac, 'Tx_Power':tx_power, 'RSSI':rssi, \
-                        #     'Distance (in m)': distance}
-                        # profile_index += 1
                         distance = distance_calculation(rssi, tx_power) # calculate the distance from the beacon to receiver
                         distances.append(distance)
         print('Finished scanning, computing the receiver coordinates...\n')
